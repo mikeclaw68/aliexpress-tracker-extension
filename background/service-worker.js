@@ -2,75 +2,84 @@
 
 const DEFAULT_API_BASE = 'http://localhost:3000';
 
-// Handle messages from popup
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'trackProduct') {
     handleTrackProduct(message.payload)
-      .then(response => sendResponse(response))
-      .catch(err => sendResponse({ success: false, error: err.message }));
-    return true; // Keep message channel open for async response
+      .then((response) => sendResponse(response))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
   }
 
   if (message.action === 'getSettings') {
-    getSettings().then(settings => sendResponse(settings));
+    getSettings()
+      .then((settings) => sendResponse({ success: true, settings }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
     return true;
   }
 
   if (message.action === 'updateSettings') {
     updateSettings(message.payload)
-      .then(() => sendResponse({ success: true }))
-      .catch(err => sendResponse({ success: false, error: err.message }));
+      .then((settings) => sendResponse({ success: true, settings }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
     return true;
   }
+
+  return false;
 });
 
-async function handleTrackProduct(payload) {
+async function handleTrackProduct(payload = {}) {
   const { url, title, currentPrice, targetPrice } = payload;
 
   if (!url) {
     return { success: false, error: 'URL is required' };
   }
 
-  // Get settings
+  if (!isAliExpressUrl(url)) {
+    return { success: false, error: 'Only AliExpress product URLs are supported' };
+  }
+
   const settings = await getSettings();
-  const apiBaseUrl = settings.apiBaseUrl || DEFAULT_API_BASE;
+  const apiBaseUrl = sanitizeApiBaseUrl(settings.apiBaseUrl || DEFAULT_API_BASE);
 
   try {
-    // Call backend API
     const response = await fetch(`${apiBaseUrl}/products`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': settings.apiKey || ''
+        ...(settings.apiKey ? { 'x-api-key': settings.apiKey } : {})
       },
       body: JSON.stringify({
         url,
-        title,
-        currentPrice: currentPrice ? parseFloat(currentPrice) : null,
-        targetPrice
+        title: title || 'Unknown Product',
+        currentPrice: normalizeNumeric(currentPrice),
+        targetPrice: normalizeNumeric(targetPrice)
       })
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP ${response.status}`);
+    let responseData = null;
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      responseData = await response.json().catch(() => null);
+    } else {
+      const text = await response.text().catch(() => '');
+      responseData = text ? { message: text } : null;
     }
 
-    const product = await response.json();
+    if (!response.ok) {
+      throw new Error(responseData?.message || `HTTP ${response.status}`);
+    }
 
-    // Send notification if enabled
     if (settings.notificationsEnabled) {
-      await sendNotification('Product Tracked', `"${title}" is now being tracked.`);
+      await sendNotification('Product Tracked', `"${title || 'Unknown Product'}" is now being tracked.`);
     }
 
     return {
       success: true,
-      productId: product.id
+      productId: responseData?.id ?? null
     };
   } catch (error) {
     console.error('Failed to track product:', error);
 
-    // Send error notification
     if (settings.notificationsEnabled) {
       await sendNotification('Tracking Failed', error.message);
     }
@@ -89,33 +98,76 @@ async function getSettings() {
     apiKey: ''
   };
 
-  try {
-    const stored = await browser.storage.local.get(Object.keys(defaults));
-    return { ...defaults, ...stored };
-  } catch (err) {
-    console.error('Failed to get settings:', err);
-    return defaults;
-  }
+  const stored = await browser.storage.local.get(Object.keys(defaults));
+
+  return {
+    ...defaults,
+    ...stored,
+    apiBaseUrl: sanitizeApiBaseUrl(stored.apiBaseUrl || defaults.apiBaseUrl),
+    notificationsEnabled: stored.notificationsEnabled !== false,
+    apiKey: typeof stored.apiKey === 'string' ? stored.apiKey.trim() : ''
+  };
 }
 
-async function updateSettings(settings) {
-  try {
-    await browser.storage.local.set(settings);
-  } catch (err) {
-    console.error('Failed to save settings:', err);
-    throw err;
-  }
+async function updateSettings(incomingSettings = {}) {
+  const current = await getSettings();
+  const merged = {
+    ...current,
+    ...incomingSettings,
+    apiBaseUrl: sanitizeApiBaseUrl(incomingSettings.apiBaseUrl || current.apiBaseUrl),
+    notificationsEnabled: incomingSettings.notificationsEnabled !== undefined
+      ? !!incomingSettings.notificationsEnabled
+      : current.notificationsEnabled,
+    apiKey: typeof incomingSettings.apiKey === 'string'
+      ? incomingSettings.apiKey.trim()
+      : current.apiKey
+  };
+
+  await browser.storage.local.set({
+    apiBaseUrl: merged.apiBaseUrl,
+    notificationsEnabled: merged.notificationsEnabled,
+    apiKey: merged.apiKey
+  });
+
+  return merged;
 }
 
 async function sendNotification(title, message) {
   try {
     await browser.notifications.create({
       type: 'basic',
-      iconUrl: '../icons/icon-48.png',
+      iconUrl: browser.runtime.getURL('icons/icon-48.png'),
       title,
       message
     });
   } catch (err) {
     console.error('Failed to send notification:', err);
+  }
+}
+
+function sanitizeApiBaseUrl(url) {
+  const fallback = DEFAULT_API_BASE;
+  if (!url || typeof url !== 'string') return fallback;
+
+  try {
+    const parsed = new URL(url.trim());
+    return `${parsed.origin}${parsed.pathname}`.replace(/\/$/, '');
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizeNumeric(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const num = typeof value === 'number' ? value : parseFloat(String(value).replace(',', '.'));
+  return Number.isFinite(num) ? num : null;
+}
+
+function isAliExpressUrl(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl);
+    return /(^|\.)aliexpress\.com$/i.test(parsed.hostname);
+  } catch {
+    return false;
   }
 }
