@@ -1,5 +1,4 @@
 ## Important Rules
-- ALWAYS use email: mikeclaw68@gmail.com for commits
 - Make extension UI public (separate repo)
 - Keep API private
 - For image understanding tasks, spawn a Codex subagent
