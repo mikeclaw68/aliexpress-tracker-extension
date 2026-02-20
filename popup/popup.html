@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AliExpress Price Tracker</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AliExpress Tracker</h1>
+    </header>
+
+    <main>
+      <div id="product-form">
+        <div class="form-group">
+          <label for="product-url">Product URL</label>
+          <input type="url" id="product-url" placeholder="https://...">
+        </div>
+
+        <div class="form-group">
+          <label for="product-title">Product Title</label>
+          <input type="text" id="product-title" placeholder="Product name">
+        </div>
+
+        <div class="form-group">
+          <label for="current-price">Current Price</label>
+          <input type="text" id="current-price" placeholder="$0.00">
+        </div>
+
+        <div class="form-group">
+          <label for="target-price">Target Price</label>
+          <input type="number" id="target-price" step="0.01" placeholder="Alert when below...">
+        </div>
+
+        <button id="track-btn">Track Product</button>
+      </div>
+
+      <div id="status-area" class="status hidden"></div>
+    </main>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "AliExpress Price Tracker",
+  "version": "1.0.0",
+  "description": "Track AliExpress product prices and get notified of price drops",
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "48": "icons/icon-48.png",
+      "96": "icons/icon-96.png"
+    }
+  },
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.aliexpress.com/*/item/*",
+        "*://*.aliexpress.com/item/*",
+        "*://aliexpress.com/*/item/*",
+        "*://aliexpress.com/item/*"
+      ],
+      "js": ["content/content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "storage",
+    "notifications",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "*://*.aliexpress.com/*",
+    "http://localhost:3000/*"
+  ]
+}
