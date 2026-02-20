@@ -81,6 +81,19 @@ button.secondary:hover {
   background: #2065bf;
 }
 
+button.danger {
+  background: #dc3545;
+  margin-top: 8px;
+}
+
+button.danger:hover {
+  background: #c82333;
+}
+
+.hidden {
+  display: none !important;
+}
+
 .settings-panel {
   margin-top: 14px;
   border: 1px solid #e4e4e4;

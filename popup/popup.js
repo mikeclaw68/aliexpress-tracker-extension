@@ -10,6 +10,8 @@ const elements = {
   currentPriceInput: document.getElementById('current-price'),
   targetPriceInput: document.getElementById('target-price'),
   trackBtn: document.getElementById('track-btn'),
+  untrackBtn: document.getElementById('untrack-btn'),
+  productIdInput: document.getElementById('product-id'),
   statusArea: document.getElementById('status-area'),
   apiBaseUrlInput: document.getElementById('api-base-url'),
   apiKeyInput: document.getElementById('api-key'),
@@ -21,6 +23,7 @@ async function init() {
   await Promise.all([prefillFromTab(), loadSettings()]);
 
   elements.trackBtn.addEventListener('click', handleTrack);
+  elements.untrackBtn.addEventListener('click', handleUntrack);
   elements.saveSettingsBtn.addEventListener('click', handleSaveSettings);
 }
 
@@ -46,6 +49,14 @@ async function prefillFromTab() {
     if (response?.success) {
       elements.titleInput.value = response.title || elements.titleInput.value;
       elements.currentPriceInput.value = response.price || '';
+      // Store additional data for tracking
+      if (response.imageUrl || response.shopName || response.originalPrice) {
+        window.__extractedProductData = {
+          imageUrl: response.imageUrl,
+          shopName: response.shopName,
+          originalPrice: response.originalPrice
+        };
+      }
     }
   } catch (err) {
     console.log('Could not extract product info:', err.message);
@@ -97,11 +108,47 @@ async function handleSaveSettings() {
   }
 }
 
+async function handleUntrack() {
+  const productId = elements.productIdInput.value;
+
+  if (!productId) {
+    showStatus('No product to untrack', 'error');
+    return;
+  }
+
+  elements.untrackBtn.disabled = true;
+  showStatus('Untracking product...', 'info');
+
+  try {
+    const response = await browser.runtime.sendMessage({
+      action: 'untrackProduct',
+      payload: { productId }
+    });
+
+    if (response?.success) {
+      showStatus('Product untracked', 'success');
+      elements.productIdInput.value = '';
+      elements.trackBtn.classList.remove('hidden');
+      elements.untrackBtn.classList.add('hidden');
+    } else {
+      showStatus(response?.error || 'Failed to untrack product', 'error');
+    }
+  } catch (err) {
+    showStatus('Error: ' + err.message, 'error');
+  } finally {
+    elements.untrackBtn.disabled = false;
+  }
+}
+
 async function handleTrack() {
   const url = elements.urlInput.value.trim();
   const title = elements.titleInput.value.trim();
   const currentPrice = elements.currentPriceInput.value.trim();
   const targetPrice = elements.targetPriceInput.value.trim();
+
+  // Get additional extracted data
+  const extractedData = window.__extractedProductData || {};
+  delete window.__extractedProductData;
 
   if (!url) {
     showStatus('Please enter a product URL', 'error');
@@ -128,7 +175,11 @@ async function handleTrack() {
         url,
         title: title || 'Unknown Product',
         currentPrice: normalizeNumeric(currentPrice),
-        targetPrice: normalizeNumeric(targetPrice)
+        targetPrice: normalizeNumeric(targetPrice),
+        // Additional extracted data
+        originalPrice: normalizeNumeric(extractedData.originalPrice),
+        imageUrl: extractedData.imageUrl,
+        shopName: extractedData.shopName
       }
     });
 
@@ -139,6 +190,14 @@ async function handleTrack() {
           : 'Product tracked successfully!',
         'success'
       );
+      
+      // Show untrack button and store product ID
+      if (response.productId) {
+        elements.productIdInput.value = response.productId;
+        elements.trackBtn.classList.add('hidden');
+        elements.untrackBtn.classList.remove('hidden');
+      }
+      
       clearForm();
     } else {
       showStatus(response?.error || 'Failed to track product', 'error');

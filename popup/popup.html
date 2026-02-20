@@ -14,6 +14,8 @@
 
     <main>
       <div id="product-form">
+        <input type="hidden" id="product-id">
+
         <div class="form-group">
           <label for="product-url">Product URL</label>
           <input type="url" id="product-url" placeholder="https://...">
@@ -35,6 +37,7 @@
         </div>
 
         <button id="track-btn">Track Product</button>
+        <button id="untrack-btn" class="danger hidden">Untrack Product</button>
       </div>
 
       <details class="settings-panel">

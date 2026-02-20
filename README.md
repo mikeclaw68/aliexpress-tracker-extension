@@ -18,6 +18,8 @@ A Firefox extension for tracking AliExpress product prices.
 - Click the extension icon in the toolbar
 - The popup auto-fills URL and extracts product details when possible
 - Enter a target price (optional) and click **Track Product**
+- A checkmark badge will appear on the extension icon when tracked
+- Use **Untrack Product** button to remove tracking
 
 ### 2) Configure Settings
 
@@ -43,11 +45,19 @@ The extension expects:
 
 ```json
 {
-  "url": "https://www.aliexpress.com/item/...",
+  "aliexpressId": "1234567890",
   "title": "Product name",
-  "currentPrice": 19.99,
-  "targetPrice": 15.0
+  "currentPrice": 19.99
 }
+```
+
+Response format (either is accepted):
+```json
+{ "product": { "id": "prod_xxx" } }
+```
+or
+```json
+{ "id": "prod_xxx" }
 ```
 
 ## Validation Notes
