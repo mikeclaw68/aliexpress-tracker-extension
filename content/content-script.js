@@ -120,42 +120,88 @@
       overflow: 'hidden'
     });
 
-    panel.innerHTML = `
-      <div style="padding:14px 16px; background:#ff6b00; color:#fff; font-weight:600; font-size:15px; display:flex; justify-content:space-between; align-items:center;">
-        <span>📦 Track Product</span>
-        <span id="ali-tracker-close" style="cursor:pointer; font-size:18px; opacity:0.8;">✕</span>
-      </div>
-      <div style="padding:14px 16px;">
-        <div style="margin-bottom:10px;">
-          <div style="font-size:12px; color:#888; margin-bottom:2px;">Title</div>
-          <div style="font-size:13px; font-weight:500; max-height:40px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(product.title || 'Unknown Product')}</div>
-        </div>
-        <div style="margin-bottom:10px;">
-          <div style="font-size:12px; color:#888; margin-bottom:2px;">Current Price</div>
-          <div style="font-size:16px; font-weight:700; color:#ff6b00;">${product.price ? '$' + product.price : 'Not detected'}</div>
-        </div>
-        <div style="margin-bottom:12px;">
-          <label style="font-size:12px; color:#888; display:block; margin-bottom:4px;">Target Price (optional)</label>
-          <input id="ali-tracker-target" type="number" step="0.01" placeholder="Alert when below..." style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px; box-sizing:border-box;">
-        </div>
-        <button id="ali-tracker-submit" style="width:100%; padding:10px; background:#ff6b00; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:500; cursor:pointer;">
-          Track This Product
-        </button>
-        <div id="ali-tracker-status" style="margin-top:8px; text-align:center; font-size:13px;"></div>
-      </div>
-    `;
+    // Build panel DOM safely (no innerHTML)
+    const header = document.createElement('div');
+    Object.assign(header.style, { padding: '14px 16px', background: '#ff6b00', color: '#fff', fontWeight: '600', fontSize: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' });
+    const headerTitle = document.createElement('span');
+    headerTitle.textContent = '📦 Track Product';
+    const closeBtn = document.createElement('span');
+    closeBtn.id = 'ali-tracker-close';
+    closeBtn.textContent = '✕';
+    Object.assign(closeBtn.style, { cursor: 'pointer', fontSize: '18px', opacity: '0.8' });
+    header.appendChild(headerTitle);
+    header.appendChild(closeBtn);
+
+    const body = document.createElement('div');
+    Object.assign(body.style, { padding: '14px 16px' });
+
+    // Title section
+    const titleSection = document.createElement('div');
+    titleSection.style.marginBottom = '10px';
+    const titleLabel = document.createElement('div');
+    Object.assign(titleLabel.style, { fontSize: '12px', color: '#888', marginBottom: '2px' });
+    titleLabel.textContent = 'Title';
+    const titleValue = document.createElement('div');
+    Object.assign(titleValue.style, { fontSize: '13px', fontWeight: '500', maxHeight: '40px', overflow: 'hidden', textOverflow: 'ellipsis' });
+    titleValue.textContent = product.title || 'Unknown Product';
+    titleSection.appendChild(titleLabel);
+    titleSection.appendChild(titleValue);
+
+    // Price section
+    const priceSection = document.createElement('div');
+    priceSection.style.marginBottom = '10px';
+    const priceLabel = document.createElement('div');
+    Object.assign(priceLabel.style, { fontSize: '12px', color: '#888', marginBottom: '2px' });
+    priceLabel.textContent = 'Current Price';
+    const priceValue = document.createElement('div');
+    Object.assign(priceValue.style, { fontSize: '16px', fontWeight: '700', color: '#ff6b00' });
+    priceValue.textContent = product.price ? '$' + product.price : 'Not detected';
+    priceSection.appendChild(priceLabel);
+    priceSection.appendChild(priceValue);
+
+    // Target price input
+    const targetSection = document.createElement('div');
+    targetSection.style.marginBottom = '12px';
+    const targetLabel = document.createElement('label');
+    Object.assign(targetLabel.style, { fontSize: '12px', color: '#888', display: 'block', marginBottom: '4px' });
+    targetLabel.textContent = 'Target Price (optional)';
+    const targetInput = document.createElement('input');
+    targetInput.id = 'ali-tracker-target';
+    targetInput.type = 'number';
+    targetInput.step = '0.01';
+    targetInput.placeholder = 'Alert when below...';
+    Object.assign(targetInput.style, { width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' });
+    targetSection.appendChild(targetLabel);
+    targetSection.appendChild(targetInput);
+
+    // Submit button
+    const submitBtn = document.createElement('button');
+    submitBtn.id = 'ali-tracker-submit';
+    submitBtn.textContent = 'Track This Product';
+    Object.assign(submitBtn.style, { width: '100%', padding: '10px', background: '#ff6b00', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' });
+
+    // Status div
+    const statusDiv = document.createElement('div');
+    statusDiv.id = 'ali-tracker-status';
+    Object.assign(statusDiv.style, { marginTop: '8px', textAlign: 'center', fontSize: '13px' });
+
+    body.appendChild(titleSection);
+    body.appendChild(priceSection);
+    body.appendChild(targetSection);
+    body.appendChild(submitBtn);
+    body.appendChild(statusDiv);
+
+    panel.appendChild(header);
+    panel.appendChild(body);
 
     document.body.appendChild(panel);
 
     // Event listeners
-    panel.querySelector('#ali-tracker-close').addEventListener('click', () => {
+    closeBtn.addEventListener('click', () => {
       panel.remove();
     });
 
-    panel.querySelector('#ali-tracker-submit').addEventListener('click', async () => {
-      const targetInput = panel.querySelector('#ali-tracker-target');
-      const statusDiv = panel.querySelector('#ali-tracker-status');
-      const submitBtn = panel.querySelector('#ali-tracker-submit');
+    submitBtn.addEventListener('click', async () => {
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Tracking...';
@@ -206,12 +252,6 @@
         submitBtn.textContent = 'Track This Product';
       }
     });
-  }
-
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   }
 
   function extractProductInfo() {

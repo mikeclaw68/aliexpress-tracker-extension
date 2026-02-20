@@ -209,13 +209,7 @@ async function setBadge(text, color) {
     await browser.action.setBadgeText({ text: text || '' });
     await browser.action.setBadgeBackgroundColor({ color: color || '#ff6b00' });
   } catch (err) {
-    // Fallback for Firefox - use browser.browserAction
-    try {
-      await browser.browserAction.setBadgeText({ text: text || '' });
-      await browser.browserAction.setBadgeBackgroundColor({ color: color || '#ff6b00' });
-    } catch (e) {
-      // Ignore badge errors
-    }
+    console.warn('Badge API not available:', err.message);
   }
 }
 
