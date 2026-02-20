@@ -5,41 +5,62 @@ A Firefox extension for tracking AliExpress product prices.
 ## Loading the Extension in Firefox
 
 1. Open Firefox and navigate to `about:debugging`
-2. Click "This Firefox" in the sidebar
-3. Click "Load Temporary Add-on..."
+2. Click **This Firefox** in the sidebar
+3. Click **Load Temporary Add-on...**
 4. Navigate to the `extension/` folder and select `manifest.json`
 5. The extension icon will appear in your toolbar
 
 ## Usage
 
-1. **Track a Product**: 
-   - Navigate to an AliExpress product page
-   - Click the extension icon in the toolbar
-   - The popup should auto-fill the URL and any extractable product details
-   - Enter a target price (optional) and click "Track Product"
+### 1) Track a Product
 
-2. **Manual Tracking**:
-   - If extraction fails, manually enter the URL, title, and current price
-   - Click "Track Product" to save
+- Navigate to an AliExpress product page
+- Click the extension icon in the toolbar
+- The popup auto-fills URL and extracts product details when possible
+- Enter a target price (optional) and click **Track Product**
 
-## Development
+### 2) Configure Settings
 
-The extension consists of:
-- `manifest.json` - Extension configuration (Manifest V3)
-- `popup/` - Extension popup UI (HTML/CSS/JS)
-- `content/content-script.js` - Extracts product info from AliExpress pages
-- `background/service-worker.js` - Handles API calls and notifications
+Open **Settings** in the popup and configure:
 
-## Backend
+- **API Base URL** (default: `http://localhost:3000`)
+- **API Key** (optional)
+- **Enable notifications** toggle
 
-The extension expects a backend API running at `http://localhost:3000` with:
-- `POST /products` - Add a new tracked product
-- Header `x-api-key` - API key authentication
+Click **Save Settings** before tracking.
 
-Configure the API URL in the extension code or storage if different.
+### 3) Manual Tracking
+
+If extraction fails, manually enter URL/title/current price and track from the popup.
+
+## Backend Contract
+
+The extension expects:
+
+- `POST /products`
+- Header `x-api-key` when configured
+- JSON body:
+
+```json
+{
+  "url": "https://www.aliexpress.com/item/...",
+  "title": "Product name",
+  "currentPrice": 19.99,
+  "targetPrice": 15.0
+}
+```
+
+## Validation Notes
+
+Current behavior implemented:
+
+- AliExpress URL guard in popup and background
+- Content-script extraction on product pages with fallbacks
+- Background handles non-JSON API errors gracefully
+- Notification icon uses extension runtime URL
 
 ## Debugging
 
-- Popup errors: Right-click popup → Inspect
-- Background worker: Find the extension in about:debugging → Service Workers
-- Content script: Use page's developer tools console
+- Popup errors: right-click popup → **Inspect**
+- Background worker logs: `about:debugging` → extension → **Inspect** service worker
+- Content script logs: page developer tools console
