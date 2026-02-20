@@ -37,6 +37,27 @@
         <button id="track-btn">Track Product</button>
       </div>
 
+      <details class="settings-panel">
+        <summary>Settings</summary>
+
+        <div class="form-group">
+          <label for="api-base-url">API Base URL</label>
+          <input type="url" id="api-base-url" placeholder="http://localhost:3000">
+        </div>
+
+        <div class="form-group">
+          <label for="api-key">API Key</label>
+          <input type="password" id="api-key" placeholder="optional">
+        </div>
+
+        <label class="checkbox-row" for="notifications-enabled">
+          <input type="checkbox" id="notifications-enabled">
+          <span>Enable notifications</span>
+        </label>
+
+        <button id="save-settings-btn" class="secondary">Save Settings</button>
+      </details>
+
       <div id="status-area" class="status hidden"></div>
     </main>
   </div>
